@@ -71,7 +71,7 @@ cert: false
 
 ## Access Code Server
 
-**Option 1.** The code server has been exposed via a CloudFront distribution. You can find the https endpoint in the CloudFormation console output after deploy 2-cloudfront-distribution.yaml.
+**Option 1.** The code server has been exposed via a CloudFront distribution. You can find the https endpoint in the CloudFormation console output.
 
 **Option 2.** Use AWS System Manager (SSM) and port forwarding to forward the code server to local host as the following command. In this case, there are prerequisites:
 
