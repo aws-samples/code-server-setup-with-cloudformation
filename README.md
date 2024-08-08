@@ -6,12 +6,7 @@ date: 08/08/2024
 
 ## Deploy
 
-Deploying the vscode-server-stack.yaml stack will:
-
-- Create an EC2 instance and install the [code server](https://github.com/coder/code-server) using UserData.
-- Expose the code server via a CloudFront distribution.
-
-You can use CLI as the below command to deploy the stack or use the AWS CloudFormation console.
+To deploy the stack, you can use CLI as the below command or use the AWS CloudFormation console.
 
 ```bash
 aws cloudformation create-stack \
@@ -19,6 +14,11 @@ aws cloudformation create-stack \
  --template-body file://vscode-server-stack.yaml \
  --capabilities CAPABILITY_NAMED_IAM
 ```
+
+The vscode-server-stack.yaml stack will:
+
+- Create an EC2 instance and install the [code server](https://github.com/coder/code-server) using UserData.
+- Expose the code server via a CloudFront distribution.
 
 ## Parameters
 
