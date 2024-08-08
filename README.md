@@ -1,5 +1,5 @@
 ---
-title: Hosting VSCode Server on EC2 and CloudFront Distribution
+title: Hosting Code Server on EC2 and CloudFront Distribution
 author: haimtran
 date: 08/08/2024
 ---
@@ -35,19 +35,19 @@ To deploy the stack, you can use CLI as the below command or use the AWS CloudFo
 
 ```bash
 aws cloudformation create-stack \
- --stack-name vscode-server-stack \
- --template-body file://vscode-server-stack.yaml \
+ --stack-name code-server-stack \
+ --template-body file://code-server-stack.yaml \
  --capabilities CAPABILITY_NAMED_IAM
 ```
 
-The vscode-server-stack.yaml stack will:
+The code-server-stack.yaml stack will:
 
 - Create an EC2 instance and install the [code server](https://github.com/coder/code-server) using UserData.
 - Expose the code server via a CloudFront distribution.
 
 ## Parameters
 
-You can change the following parameters by editing the vscode-server-stack.yaml.
+You can change the following parameters by editing the code-server-stack.yaml.
 
 - EC2 instance type to host the code server (default t2.medium)
 - Amazon Machine Image (AMI) (default [latest amazon linux 2023 in us-west-2](https://docs.aws.amazon.com/linux/al2023/ug/ec2.html))
