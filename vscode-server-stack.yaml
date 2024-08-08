@@ -1,0 +1,212 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: deploy a vscode-server on an ec2 
+#------------------------------------------------------
+# Parameters
+#------------------------------------------------------
+Parameters:
+  VPCID: 
+    Description: imported vpc id
+    Type: String
+    Default: "" 
+  SubnetID:
+    Description: imported subnet id
+    Type: String
+    Default: ""
+  InstanceType:
+    Description: WebServer EC2 instance type
+    Type: String
+    Default: t2.medium
+    ConstraintDescription: must be a valid EC2 instance type.
+  LatestAmiId:
+    Description: latest image id for linux 2023
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>" 
+    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64" 
+  InternetCidrBlock:
+    Type: String
+    Description: UserCidrBlock
+    Default: 0.0.0.0/0
+  CloudFrontPrefixListId: 
+    Type: String
+    Description: CloudFrontPrefixListId
+    Default: pl-82a045eb
+  VSCodeServerVersion:
+    Type: String
+    Description: VSCodeServerVersion
+    Default: 4.91.1
+  CachePolicyId: 
+    Type: String
+    Description: cache policy id
+    Default: 83da9c7e-98b4-4e11-a168-04f0df8e2c65 
+  OriginRequestPolicyId: 
+    Type: String
+    Description: origin request policy id
+    Default: 216adef6-5c7f-47e4-b989-5492eafa07d3  
+Conditions:
+  ImportVPCIDNotEmpty: 
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: VPCID
+          - ""
+  ImportSubnetIDNotEmpty: 
+    Fn::Not:
+      - Fn::Equals:
+          - Ref: SubnetID
+          - ""
+#------------------------------------------------------
+# Security Group
+#------------------------------------------------------
+Resources:
+  VSCodeServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W40
+            reason: allow http from the internet
+          - id: W5
+            reason: allow ingress from the internet
+    Properties:
+      GroupDescription: allow http from internet
+      VpcId:
+        Fn::If:
+          - ImportVPCIDNotEmpty
+          - Ref: VPCID
+          - Ref: AWS::NoValue 
+
+  VSCodeServerSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: open http for user from the internet
+      GroupId: 
+        Fn::GetAtt:
+          - VSCodeServerSecurityGroup
+          - GroupId
+      IpProtocol: tcp
+      FromPort: 8080
+      ToPort: 8080
+      SourcePrefixListId: !Ref CloudFrontPrefixListId
+
+  VSCodeServerSecurityGroupEgress:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: egress for vscode security group
+      GroupId:
+        Fn::GetAtt:
+          - VSCodeServerSecurityGroup
+          - GroupId
+      IpProtocol: -1
+      CidrIp: !Ref InternetCidrBlock
+#------------------------------------------------------
+# Role and Instance Profile
+#------------------------------------------------------
+  VSCodeServerIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - Ref: VSCodeServerIAMRole
+#------------------------------------------------------
+# EC2 Instance for VSCode Server
+#------------------------------------------------------
+  VSCodeServer:
+    Type: AWS::EC2::Instance
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W40
+            reason: allow http from the internet
+    Properties:
+      ImageId: !Ref LatestAmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      Tags:
+        - Key: Name
+          Value: VSCodeServer 
+      NetworkInterfaces:
+        - DeviceIndex: "0"
+          AssociatePublicIpAddress: "true"
+          SubnetId:
+            Fn::If:
+              - ImportSubnetIDNotEmpty
+              - Ref: SubnetID
+              - Ref: AWS::NoValue 
+          GroupSet:
+            - Fn::GetAtt:
+                - VSCodeServerSecurityGroup
+                - GroupId
+      Monitoring: true
+      UserData:
+        Fn::Base64:
+          Fn::Sub:
+            - |
+              #!/bin/bash
+              export VERSION=${VSCodeServerVersion}
+              curl -fOL https://github.com/coder/code-server/releases/download/v$VERSION/code-server-$VERSION-amd64.rpm
+              sudo rpm -i code-server-$VERSION-amd64.rpm
+              sudo systemctl enable --now code-server@ec2-user
+              sleep 30
+              sed -i.bak 's/auth: password/auth: none/' /home/ec2-user/.config/code-server/config.yaml
+              sed -i.bak 's/bind-addr: 127.0.0.1:8080/bind-addr: 0.0.0.0:8080/' /home/ec2-user/.config/code-server/config.yaml
+              systemctl restart code-server@ec2-user
+            - VSCodeServerVersion: !Ref VSCodeServerVersion
+#------------------------------------------------------
+# CloudFront Distribution
+#------------------------------------------------------ 
+  VSCodeServerCloudFront:
+    Type: AWS::CloudFront::Distribution
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W10
+            reason: disable access logging for demo purpose 
+          - id: W70
+            reason: no TLS version for demo purpose 
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt VSCodeServer.PublicDnsName
+            Id: !GetAtt VSCodeServer.PublicDnsName
+            CustomOriginConfig:
+              HTTPPort: 8080
+              OriginProtocolPolicy: http-only
+        Enabled: true
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT 
+            - POST 
+            - PATCH 
+            - DELETE
+          ForwardedValues:
+            QueryString: 'false'
+          Compress: false
+          TargetOriginId: !GetAtt VSCodeServer.PublicDnsName
+          ViewerProtocolPolicy: allow-all
+          OriginRequestPolicyId: !Ref OriginRequestPolicyId 
+          CachePolicyId: !Ref CachePolicyId 
+#------------------------------------------------------
+# Exported output
+#------------------------------------------------------ 
+Outputs:
+  VSCodeServerCloudFrontDomainName:
+    Value: 
+      !Sub 
+        - "https://${domain}"
+        - { domain: !GetAtt VSCodeServerCloudFront.DomainName }
+    Export:
+      Name: !Sub ${AWS::StackName}-domain-name
