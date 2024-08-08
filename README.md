@@ -6,7 +6,7 @@ date: 08/08/2024
 
 ## Supported Region
 
-By default, the provided template supports the following regions with a CloudFront prefix list id map.
+By default, the provided template supports the following regions.
 
 | Region         | CloudFront Prefix List ID |
 | -------------- | ------------------------- |
@@ -45,7 +45,7 @@ The code-server-stack.yaml stack will:
 - Create an EC2 instance and install the [code server](https://github.com/coder/code-server) using UserData.
 - Expose the code server via a CloudFront distribution.
 
-## Parameters
+## Code Server Configuration
 
 You can change the following parameters by editing the code-server-stack.yaml.
 
