@@ -4,6 +4,31 @@ author: haimtran
 date: 08/08/2024
 ---
 
+## Supported Region
+
+By default, the provided template supports the following regions with a CloudFront prefix list id map.
+
+| Region         | CloudFront Prefix List ID |
+| -------------- | ------------------------- |
+| us-west-2      | pl-82a045eb               |
+| us-east-1      | pl-3b927c52               |
+| ap-southeast-1 | pl-31a34658               |
+
+To deploy in other region, you have to update the CloudFront prefix list id map. Check [docs](https://docs.aws.amazon.com/vpc/latest/userguide/working-with-aws-managed-prefix-lists.html) for more details how to find the CloudFront prefix list per region.
+
+```yaml
+Mappings:
+  CloudFrontPrefixListIdMappings:
+    us-west-2:
+      PrefixListId: "pl-82a045eb"
+    us-east-1:
+      PrefixListId: "pl-3b927c52"
+    ap-southeast-1:
+      PrefixListId: "pl-31a34658"
+    <YOUR_SELECTED_REGION>:
+      PrefixListId: <CLOUDFRONT_PREFIX_LIST_ID_FOR_THE_SELECTED_REGION>
+```
+
 ## Deploy
 
 To deploy the stack, you can use CLI as the below command or use the AWS CloudFormation console.

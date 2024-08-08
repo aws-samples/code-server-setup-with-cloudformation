@@ -5,6 +5,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: deploy a vscode-server on an ec2 
 #------------------------------------------------------
+# Mappings CloudFront PrefixListId 
+#------------------------------------------------------
+Mappings: 
+  CloudFrontPrefixListIdMappings:
+    us-west-2:
+      PrefixListId: "pl-82a045eb"
+    us-east-1: 
+      PrefixListId: "pl-3b927c52"
+    ap-southeast-1:
+      PrefixListId: "pl-31a34658"
+#------------------------------------------------------
 # Parameters
 #------------------------------------------------------
 Parameters:
@@ -29,10 +40,6 @@ Parameters:
     Type: String
     Description: UserCidrBlock
     Default: 0.0.0.0/0
-  CloudFrontPrefixListId: 
-    Type: String
-    Description: CloudFrontPrefixListId
-    Default: pl-82a045eb
   VSCodeServerVersion:
     Type: String
     Description: VSCodeServerVersion
@@ -88,7 +95,11 @@ Resources:
       IpProtocol: tcp
       FromPort: 8080
       ToPort: 8080
-      SourcePrefixListId: !Ref CloudFrontPrefixListId
+      SourcePrefixListId:
+        Fn::FindInMap:
+          - CloudFrontPrefixListIdMappings
+          - Ref: AWS::Region
+          - PrefixListId
 
   VSCodeServerSecurityGroupEgress:
     Type: AWS::EC2::SecurityGroupEgress
@@ -117,6 +128,7 @@ Resources:
                 - ec2.amazonaws.com
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/AdministratorAccess
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
