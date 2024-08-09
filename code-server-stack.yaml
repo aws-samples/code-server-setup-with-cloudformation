@@ -73,11 +73,11 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W40
-            reason: allow http from the cloudfront prefix list
+            reason: allow ingress from the cloudfront prefix list
           - id: W5
             reason: allow ingress from the cloudfront prefix list
     Properties:
-      GroupDescription: allow http from cloudfront prefix list
+      GroupDescription: allow ingress from cloudfront prefix list
       VpcId:
         Fn::If:
           - ImportVPCIDNotEmpty
@@ -87,7 +87,7 @@ Resources:
   VSCodeServerSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      Description: open http for user from the cloudfront prefix list
+      Description: open port 8080 for the cloudfront prefix list
       GroupId: 
         Fn::GetAtt:
           - VSCodeServerSecurityGroup
