@@ -142,7 +142,7 @@ Resources:
       cfn_nag:
         rules_to_suppress:
           - id: W40
-            reason: allow http from the internet
+            reason: allow tcp 8080 from the cloudfront prefix list
     Properties:
       ImageId: !Ref LatestAmiId
       InstanceType: !Ref InstanceType
