@@ -1,6 +1,6 @@
 #------------------------------------------------------
 # Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- # SPDX-License-Identifier: MIT-0 
+# SPDX-License-Identifier: MIT-0 
 #------------------------------------------------------
 AWSTemplateFormatVersion: "2010-09-09"
 Description: deploy a vscode-server on an ec2 
@@ -30,12 +30,12 @@ Parameters:
   InstanceType:
     Description: WebServer EC2 instance type
     Type: String
-    Default: t2.medium
+    Default: t2.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   LatestAmiId:
-    Description: latest image id for linux 2023
+    Description: latest image id for ubuntu
     Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>" 
-    Default: "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64" 
+    Default: "/aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id" 
   InternetCidrBlock:
     Type: String
     Description: UserCidrBlock
@@ -169,15 +169,14 @@ Resources:
           Fn::Sub:
             - |
               #!/bin/bash
-              export VERSION=${VSCodeServerVersion}
-              curl -fOL https://github.com/coder/code-server/releases/download/v$VERSION/code-server-$VERSION-amd64.rpm
-              sudo rpm -i code-server-$VERSION-amd64.rpm
-              sudo systemctl enable --now code-server@ec2-user
+              curl -fOL https://github.com/coder/code-server/releases/download/v${VERSION}/code-server_${VERSION}_amd64.deb
+              sudo dpkg -i code-server_${VERSION}_amd64.deb
+              sudo systemctl enable --now code-server@ubuntu
               sleep 30
-              sed -i.bak 's/auth: password/auth: none/' /home/ec2-user/.config/code-server/config.yaml
-              sed -i.bak 's/bind-addr: 127.0.0.1:8080/bind-addr: 0.0.0.0:8080/' /home/ec2-user/.config/code-server/config.yaml
-              systemctl restart code-server@ec2-user
-            - VSCodeServerVersion: !Ref VSCodeServerVersion
+              sed -i.bak 's/auth: password/auth: none/' /home/ubuntu/.config/code-server/config.yaml
+              sed -i.bak 's/bind-addr: 127.0.0.1:8080/bind-addr: 0.0.0.0:8080/' /home/ubuntu/.config/code-server/config.yaml
+              sudo systemctl restart code-server@ubuntu
+            - VERSION: !Ref VSCodeServerVersion
 #------------------------------------------------------
 # CloudFront Distribution
 #------------------------------------------------------ 
@@ -226,3 +225,15 @@ Outputs:
         - { domain: !GetAtt VSCodeServerCloudFront.DomainName }
     Export:
       Name: !Sub ${AWS::StackName}-domain-name
+  VSCodeServerPrivateIP:
+    Value: !GetAtt VSCodeServer.PrivateIp
+    Export:
+      Name: !Sub ${AWS::StackName}-code-server-private-ip
+  VSCodeServerRoleARN:
+    Value: !GetAtt VSCodeServerIAMRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-code-server-role-arn
+  VSCodeServerInstanceId:
+    Value: !Ref VSCodeServer
+    Export:
+      Name: !Sub ${AWS::StackName}-code-server-instance-id
