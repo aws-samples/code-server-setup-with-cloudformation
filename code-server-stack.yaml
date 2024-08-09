@@ -128,7 +128,6 @@ Resources:
                 - ec2.amazonaws.com
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
-        - arn:aws:iam::aws:policy/AdministratorAccess
   InstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
