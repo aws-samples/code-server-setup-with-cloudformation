@@ -83,7 +83,7 @@ cert: false
 aws ssm start-session \
 --target <INSTANCE_ID> \
 --document-name AWS-StartPortForwardingSessionToRemoteHost \
---parameters "{\"portNumber\":[\"8080\"],\"localPortNumber\":[\"8080\"],\"host\":[\"172.31.19.133\"]}" \
+--parameters "{\"portNumber\":[\"8080\"],\"localPortNumber\":[\"8080\"],\"host\":[\"<CODE_SERVER_EC2_PRIVATE_IP>\"]}" \
 --profile <PROFILE_NAME>\
 --region <REGION>
 ```
