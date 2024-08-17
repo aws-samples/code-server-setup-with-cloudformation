@@ -44,10 +44,6 @@ Parameters:
     Type: String
     Description: VSCodeServerVersion
     Default: 4.91.1
-  CachePolicyId: 
-    Type: String
-    Description: cache policy id
-    Default: 83da9c7e-98b4-4e11-a168-04f0df8e2c65 
   OriginRequestPolicyId: 
     Type: String
     Description: origin request policy id
@@ -177,6 +173,35 @@ Resources:
               sudo systemctl restart code-server@ubuntu
             - VERSION: !Ref VSCodeServerVersion
 #------------------------------------------------------
+# CloudFront Cached Policy
+#------------------------------------------------------ 
+  VSCodeServerCloudFrontCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Properties:
+      CachePolicyConfig:
+        DefaultTTL: 86400
+        MaxTTL: 31536000
+        MinTTL: 1
+        Name: !Join ['-', ['VSCodeServer', !Select [4, !Split ['-', !Select [2, !Split ['/', !Ref AWS::StackId]]]]]]
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: all
+          EnableAcceptEncodingGzip: False
+          HeadersConfig:
+            HeaderBehavior: whitelist
+            Headers: 
+              - Accept-Charset
+              - Authorization
+              - Origin
+              - Accept
+              - Referer
+              - Host
+              - Accept-Language
+              - Accept-Encoding
+              - Accept-Datetime
+          QueryStringsConfig:
+            QueryStringBehavior: all
+#------------------------------------------------------
 # CloudFront Distribution
 #------------------------------------------------------ 
   VSCodeServerCloudFront:
@@ -212,7 +237,7 @@ Resources:
           TargetOriginId: !GetAtt VSCodeServer.PublicDnsName
           ViewerProtocolPolicy: allow-all
           OriginRequestPolicyId: !Ref OriginRequestPolicyId 
-          CachePolicyId: !Ref CachePolicyId 
+          CachePolicyId: !Ref VSCodeServerCloudFrontCachePolicy 
 #------------------------------------------------------
 # Exported output
 #------------------------------------------------------ 
